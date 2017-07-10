@@ -20,14 +20,15 @@ def decorator(dec):
     Decorate a decorator so that it inherits the docstrings
     and stuff from the function it's decorating.
     '''
-    def wrapper(*args, **kwargs):
-        return dec(*args, **kwargs)
-    return update_wrapper(wrapper, dec)
-
+    def wrapped(func):
+        return update_wrapper(dec, func)
+    print wrapped
 
 # @decorator
 def countcalls(func):
     '''Decorator that counts calls made to the function decorated.'''
+
+    @wraps(func)
     def wrapper(*args, **kwargs):
         wrapper.call_counter += 1
         return func(*args, **kwargs)
@@ -35,14 +36,15 @@ def countcalls(func):
     return wrapper
 
 
-@decorator
+# @decorator
 def memo(func):
     '''
-    Memoize a function so that it caches all return values for
+    Memorize a function so that it caches all return values for
     faster future lookups.
     '''
     cache = {}
 
+    @wraps(func)
     def wrapper(*args):
         if args not in cache:
             cache[args] = func(*args)
@@ -50,19 +52,21 @@ def memo(func):
     return wrapper
 
 
-@decorator
+# @decorator
 def n_ary(func):
     '''
     Given binary function f(x, y), return an n_ary function such
     that f(x, y, z) = f(x, f(y,z)), etc. Also allow f(x) = x.
     '''
 
+    @wraps(func)
     def wrapper(*args):
-        reduce(lambda x, y: func(y, x), args[::-1])
+        if len(args) == 1:
+            return args[0]
+        return reduce(lambda x, y: func(y, x), args[::-1])
     return wrapper
 
 
-# @decorator
 def trace(string):
     '''Trace calls made to function decorated.
 
@@ -83,16 +87,23 @@ def trace(string):
      <-- fib(3) == 3
 
     '''
-    @decorator
+    # @decorator
     def dec(func):
-        def wrapper(level=0, *args, **kwargs):
-            print '%s --> %s%s' % (
-                string * level, func.__name__, args
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            print '%s --> %s(%s)' % (
+                string * wrapper.level, func.__name__,
+                ', '.join([str(arg) for arg in args])
             )
+            wrapper.level += 1
             result = func(*args, **kwargs)
-            print '%s <-- %s%s == %s' % (
-                string * level, func.__name__, args, result
+            wrapper.level -= 1
+            print '%s <-- %s(%s) == %s' % (
+                string * wrapper.level, func.__name__,
+                ', '.join([str(arg) for arg in args]), result
             )
+            return result
+        wrapper.level = 0
         return wrapper
     return dec
 
@@ -124,11 +135,13 @@ def fib(n):
 
 
 def main():
+    print foo.__name__
     print foo(4, 3)
     print foo(4, 3, 2)
     print foo(4, 3)
     print "foo was called", foo.call_counter, "times"
 
+    print bar.__name__
     print bar(4, 3)
     print bar(4, 3, 2)
     print bar(4, 3, 2, 1)
@@ -136,7 +149,7 @@ def main():
 
     print fib.__doc__
     fib(3)
-    print fib.calls, 'calls made'
+    print fib.call_counter, 'calls made'
 
 
 if __name__ == '__main__':
