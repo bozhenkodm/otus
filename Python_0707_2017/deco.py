@@ -22,17 +22,17 @@ def decorator(dec):
     '''
     def wrapped(func):
         return update_wrapper(dec, func)
-    print wrapped
+    return wrapped
 
 # @decorator
 def countcalls(func):
     '''Decorator that counts calls made to the function decorated.'''
 
-    @wraps(func)
+    # @wraps(func)
     def wrapper(*args, **kwargs):
-        wrapper.call_counter += 1
+        wrapper.calls += 1
         return func(*args, **kwargs)
-    wrapper.call_counter = 0
+    wrapper.calls = 0
     return wrapper
 
 
@@ -48,6 +48,7 @@ def memo(func):
     def wrapper(*args):
         if args not in cache:
             cache[args] = func(*args)
+        update_wrapper(wrapper, func)
         return cache[args]
     return wrapper
 
@@ -139,17 +140,17 @@ def main():
     print foo(4, 3)
     print foo(4, 3, 2)
     print foo(4, 3)
-    print "foo was called", foo.call_counter, "times"
+    print "foo was called", foo.calls, "times"
 
     print bar.__name__
     print bar(4, 3)
     print bar(4, 3, 2)
     print bar(4, 3, 2, 1)
-    print "bar was called", bar.call_counter, "times"
+    print "bar was called", bar.calls, "times"
 
     print fib.__doc__
     fib(3)
-    print fib.call_counter, 'calls made'
+    print fib.calls, 'calls made'
 
 
 if __name__ == '__main__':
